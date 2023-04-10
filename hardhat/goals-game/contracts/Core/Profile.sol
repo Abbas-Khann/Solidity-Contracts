@@ -16,6 +16,13 @@ contract Profile is ERC721Base {
     {}
 
     /*
+    @dev set the starting tokenId to 1
+    */
+    function _startTokenId() internal pure override returns (uint256) {
+        return 1;
+    }
+
+    /*
     @dev Setup profile
     */
     function setupProfile(string memory _tokenURI) public {
@@ -40,15 +47,12 @@ contract Profile is ERC721Base {
     /*
     @dev Make tokens non-transferrable
     */
-    function safeTransferFrom(address from, address to, uint256 tokenId)
-        public
-        virtual
-        override(ERC721Base)
-        onlyAllowedOperator(from)
+    function _beforeTokenTransfers(address from, address to, uint256 startTokenId, uint256 quantity)
+        internal
+        override
     {
-        require(from == address(0), "Profile not transferable");
-        // sending from 0x7
-        super.safeTransferFrom(from, to, tokenId);
+        require(from == address(0), "Profiles are non-transferable");
+        super._beforeTokenTransfers(from, to, startTokenId, quantity);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -60,7 +64,7 @@ contract Profile is ERC721Base {
 
     function getTokenURI(address _owner) public view returns (string memory) {
         uint256 tokenId = getTokenId(_owner);
-        if (_exists[tokenId]) {
+        if (_exists(tokenId)) {
             return profileURI[tokenId];
         } else {
             return "";
