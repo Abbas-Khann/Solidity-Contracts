@@ -6,14 +6,18 @@ import "@thirdweb-dev/contracts/base/ERC721Base.sol";
 contract Profile is ERC721Base {
     event URISet(uint256 tokenId, string tokenURI);
 
-    mapping(address => uint256) public owners;
+    mapping(address => uint256) private owners;
     // AT (0X7....1A3BV) => tokenID at 5
-    mapping(uint256 => string) public profileURI;
+    mapping(uint256 => string) private profileURI;
+
     // AT 1 => "IPFS.CDNASDFASDF"
 
-    constructor(string memory _name, string memory _symbol, address _royaltyRecipient, uint128 _royaltyBps)
-        ERC721Base(_name, _symbol, _royaltyRecipient, _royaltyBps)
-    {}
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        address _royaltyRecipient,
+        uint128 _royaltyBps
+    ) ERC721Base(_name, _symbol, _royaltyRecipient, _royaltyBps) {}
 
     /*
     @dev set the starting tokenId to 1
@@ -39,7 +43,10 @@ contract Profile is ERC721Base {
     /*
     @dev setting upgradeable tokenURI
     */
-    function _setTokenURI(uint256 _tokenId, string memory _tokenURI) internal override {
+    function _setTokenURI(
+        uint256 _tokenId,
+        string memory _tokenURI
+    ) internal override {
         profileURI[_tokenId] = _tokenURI;
         emit URISet(_tokenId, _tokenURI);
     }
@@ -47,10 +54,12 @@ contract Profile is ERC721Base {
     /*
     @dev Make tokens non-transferrable
     */
-    function _beforeTokenTransfers(address from, address to, uint256 startTokenId, uint256 quantity)
-        internal
-        override
-    {
+    function _beforeTokenTransfers(
+        address from,
+        address to,
+        uint256 startTokenId,
+        uint256 quantity
+    ) internal override {
         require(from == address(0), "Profiles are non-transferable");
         super._beforeTokenTransfers(from, to, startTokenId, quantity);
     }
