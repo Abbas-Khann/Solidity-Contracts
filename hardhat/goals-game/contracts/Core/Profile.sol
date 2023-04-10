@@ -7,10 +7,7 @@ contract Profile is ERC721Base {
     event URISet(uint256 tokenId, string tokenURI);
 
     mapping(address => uint256) private owners;
-    // AT (0X7....1A3BV) => tokenID at 5
     mapping(uint256 => string) private profileURI;
-
-    // AT 1 => "IPFS.CDNASDFASDF"
 
     constructor(
         string memory _name,
