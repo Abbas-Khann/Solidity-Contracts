@@ -76,4 +76,8 @@ contract Profile is ERC721Base {
             return "";
         }
     }
+
+    function hasProfile(address _owner) public view returns (bool) {
+        return true ? owners[_owner] > 0 : false;
+    }
 }
