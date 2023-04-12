@@ -13,7 +13,7 @@ contract GameGoal {
     address owner;
 
     mapping(uint256 => DataTypes.Goal) public goal;
-    mapping(uint256 => DataTypes.GoalMotivator[]) public goalMotivator;
+    mapping(uint256 => DataTypes.GoalMotivator[]) goalMotivators;
     uint256 goalId;
 
     constructor(address _profileAddress) {
@@ -92,7 +92,16 @@ contract GameGoal {
             msg.sender,
             _motivationalMessage
         );
-        goalMotivator[goalId].push(motivator);
+        goalMotivators[goalId].push(motivator);
         emit Motivator(goalId, motivator);
+    }
+
+    /*
+    @dev Get motivators
+    */
+    function getGoalMotivators(
+        uint256 _id
+    ) public view returns (DataTypes.GoalMotivator[] memory) {
+        return goalMotivators[_id];
     }
 }
