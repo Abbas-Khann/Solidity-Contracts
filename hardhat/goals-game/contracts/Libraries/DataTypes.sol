@@ -16,7 +16,6 @@ library DataTypes {
     struct GoalMotivator {
         uint256 motivationTimestamp;
         address motivatorAddress;
-        bool isAccepted;
         string description;
     }
 

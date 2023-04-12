@@ -5,13 +5,15 @@ import "../Libraries/DataTypes.sol";
 
 // Contract to set, verify, close goal or become a goal motivator
 contract GameGoal {
-    event GoalSet(uint256 id, DataTypes.Goal);
+    event GoalSet(uint256 indexed id, DataTypes.Goal indexed params);
+    event Motivator(uint256 indexed id, DataTypes.GoalMotivator indexed params);
 
     Profile private _profile;
     bool public paused;
     address owner;
 
     mapping(uint256 => DataTypes.Goal) public goal;
+    mapping(uint256 => DataTypes.GoalMotivator[]) public goalMotivator;
     uint256 goalId;
 
     constructor(address _profileAddress) {
@@ -68,5 +70,29 @@ contract GameGoal {
         );
         goal[goalId] = goalParams;
         emit GoalSet(goalId, goalParams);
+    }
+
+    function becomeMotivator(
+        string memory _motivationalMessage
+    ) public onlyWhenNotPaused onlyProfileOwners {
+        require(
+            goal[goalId].authorAddress != msg.sender,
+            "You can't be your own motivator"
+        );
+        require(
+            !goal[goalId].isClosed || !goal[goalId].isAchieved,
+            "Goal closed or already achieved!"
+        );
+        require(
+            goal[goalId].deadlineTimestamp > block.timestamp,
+            "Goal not active anymore"
+        );
+        DataTypes.GoalMotivator memory motivator = DataTypes.GoalMotivator(
+            block.timestamp,
+            msg.sender,
+            _motivationalMessage
+        );
+        goalMotivator[goalId].push(motivator);
+        emit Motivator(goalId, motivator);
     }
 }
