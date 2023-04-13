@@ -41,6 +41,19 @@ contract GameGoal {
         _;
     }
 
+    modifier alreadyClosedOrAchieved(uint256 _id) {
+        require(!goal[_id].isAchieved, "Goal closed or already achieved!");
+        _;
+    }
+
+    modifier onlyGoalOwner(uint256 _id) {
+        require(
+            msg.sender == goal[_id].authorAddress,
+            "You are not the goal owner"
+        );
+        _;
+    }
+
     function pause() external onlyOwner {
         paused = true;
     }
@@ -65,7 +78,6 @@ contract GameGoal {
             msg.sender,
             msg.value,
             _deadlineTimestamp,
-            false,
             false
         );
         goal[goalId] = goalParams;
@@ -73,18 +85,15 @@ contract GameGoal {
     }
 
     function becomeMotivator(
+        uint256 _id,
         string memory _motivationalMessage
-    ) public onlyWhenNotPaused onlyProfileOwners {
+    ) public onlyWhenNotPaused onlyProfileOwners alreadyClosedOrAchieved(_id) {
         require(
-            goal[goalId].authorAddress != msg.sender,
+            goal[_id].authorAddress != msg.sender,
             "You can't be your own motivator"
         );
         require(
-            !goal[goalId].isClosed || !goal[goalId].isAchieved,
-            "Goal closed or already achieved!"
-        );
-        require(
-            goal[goalId].deadlineTimestamp > block.timestamp,
+            goal[_id].deadlineTimestamp > block.timestamp,
             "Goal not active anymore"
         );
         DataTypes.GoalMotivator memory motivator = DataTypes.GoalMotivator(
@@ -94,6 +103,31 @@ contract GameGoal {
         );
         goalMotivators[goalId].push(motivator);
         emit Motivator(goalId, motivator);
+    }
+
+    function closeGoal(
+        uint256 _id
+    )
+        external
+        onlyWhenNotPaused
+        onlyGoalOwner(_id)
+        alreadyClosedOrAchieved(_id)
+    {
+        require(
+            goal[_id].deadlineTimestamp > block.timestamp,
+            "Goal not active anymore"
+        );
+        goal[_id].isAchieved = true;
+    }
+
+    function withdrawLockedFunds(
+        uint256 _id
+    ) external onlyWhenNotPaused onlyGoalOwner(_id) {
+        require(goal[_id].isAchieved, "Goal was not achieved");
+        (bool sent, ) = goal[_id].authorAddress.call{
+            value: goal[_id].lockedAmount
+        }("");
+        require(sent, "Failed to withdraw");
     }
 
     /*

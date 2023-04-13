@@ -9,7 +9,6 @@ library DataTypes {
         address authorAddress;
         uint256 lockedAmount;
         uint256 deadlineTimestamp;
-        bool isClosed;
         bool isAchieved;
     }
 
