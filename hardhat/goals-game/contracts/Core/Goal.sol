@@ -78,7 +78,8 @@ contract GameGoal {
             msg.sender,
             msg.value,
             _deadlineTimestamp,
-            false
+            false,
+            ""
         );
         goal[goalId] = goalParams;
         emit GoalSet(goalId, goalParams);
@@ -106,7 +107,8 @@ contract GameGoal {
     }
 
     function closeGoal(
-        uint256 _id
+        uint256 _id,
+        string memory _proofURI
     )
         external
         onlyWhenNotPaused
@@ -117,6 +119,7 @@ contract GameGoal {
             goal[_id].deadlineTimestamp > block.timestamp,
             "Goal not active anymore"
         );
+        verifyGoal(_id, _proofURI);
         goal[_id].isAchieved = true;
     }
 
@@ -128,6 +131,14 @@ contract GameGoal {
             value: goal[_id].lockedAmount
         }("");
         require(sent, "Failed to withdraw");
+    }
+
+    function verifyGoal(
+        uint256 _id,
+        string memory _proofURI
+    ) internal returns (bool) {
+        goal[_id].proofURI = _proofURI;
+        return true;
     }
 
     /*

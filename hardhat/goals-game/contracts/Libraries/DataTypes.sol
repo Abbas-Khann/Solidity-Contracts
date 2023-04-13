@@ -10,6 +10,7 @@ library DataTypes {
         uint256 lockedAmount;
         uint256 deadlineTimestamp;
         bool isAchieved;
+        string proofURI;
     }
 
     struct GoalMotivator {
