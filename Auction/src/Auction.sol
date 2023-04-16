@@ -2,6 +2,11 @@
 pragma solidity ^0.8.13;
 import "../Interfaces/IERC721.sol";
 
+error BID_NOT_HIGHEST();
+error BID_NOT_ACTIVE();
+error AUCTION_TIME_EXCEEDED();
+error INVALID_ADDRESS_CALL();
+
 contract Auction {
     // event to emit when a bid is made
     event bid_made(address indexed sender, uint256 amount);
@@ -23,6 +28,8 @@ contract Auction {
     bool private bidding_active;
     // timespan of the bid
     uint64 private constant bid_timespan = 24 hours;
+    // bidding starting time
+    uint256 private bidding_ending_timestamp;
     // array of all bidders
     address[] private bidders;
     // mapping to track the amount bid by each bidder
@@ -39,5 +46,38 @@ contract Auction {
         starting_bid = msg.value;
         // setting the bidding_active bool to true after contract is deployed
         bidding_active = true;
+        // setting the starting timestamp state to the current timestamp
+        bidding_ending_timestamp = block.timestamp + bid_timespan;
     }
+
+    modifier isValidCaller() {
+        if (msg.sender == address(0)) {
+            revert INVALID_ADDRESS_CALL();
+        }
+        _;
+    }
+
+    /*
+    @dev modifier to check for Valid bids
+    */
+    modifier onlyValidBids() {
+        // amount sent should be higher than the highest_bid var
+        if (msg.value <= highest_bid) {
+            revert BID_NOT_HIGHEST();
+        }
+        // check to make sure the bidding is still active
+        else if (!bidding_active) {
+            revert BID_NOT_ACTIVE();
+        }
+        // check to make sure the bidding has not expired
+        else if (block.timestamp > bidding_ending_timestamp) {
+            revert AUCTION_TIME_EXCEEDED();
+        }
+        _;
+    }
+
+    /*
+    @dev function to place a bid
+    */
+    function bid() public payable onlyValidBids isValidCaller {}
 }
