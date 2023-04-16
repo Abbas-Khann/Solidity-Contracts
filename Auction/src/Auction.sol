@@ -19,7 +19,7 @@ contract Auction {
     // seller address
     address private seller;
     // highest_bidder for the NFT
-    uint256 private highest_bidder;
+    address private highest_bidder;
     // starting bid for the NFT
     uint256 private starting_bid;
     // highest bid for each NFT
@@ -30,6 +30,8 @@ contract Auction {
     uint64 private constant bid_timespan = 24 hours;
     // bidding starting time
     uint256 private bidding_ending_timestamp;
+    // boolean for state variable
+    bool private locked;
     // array of all bidders
     address[] private bidders;
     // mapping to track the amount bid by each bidder
@@ -50,11 +52,24 @@ contract Auction {
         bidding_ending_timestamp = block.timestamp + bid_timespan;
     }
 
+    // modifier to check if the caller is valid
     modifier isValidCaller() {
         if (msg.sender == address(0)) {
             revert INVALID_ADDRESS_CALL();
         }
         _;
+    }
+
+    // modifier to check for Reentrancies
+    modifier nonReentrant() {
+        // Makes sure locked = false
+        require(!locked, "No re-entrancy");
+        // sets locked to true and locks the function
+        locked = true;
+        // _; executes the function
+        _;
+        // sets locked back up to false to unlock it again
+        locked = false;
     }
 
     /*
@@ -66,11 +81,11 @@ contract Auction {
             revert BID_NOT_HIGHEST();
         }
         // check to make sure the bidding is still active
-        else if (!bidding_active) {
+        if (!bidding_active) {
             revert BID_NOT_ACTIVE();
         }
         // check to make sure the bidding has not expired
-        else if (block.timestamp > bidding_ending_timestamp) {
+        if (block.timestamp > bidding_ending_timestamp) {
             revert AUCTION_TIME_EXCEEDED();
         }
         _;
@@ -79,5 +94,14 @@ contract Auction {
     /*
     @dev function to place a bid
     */
-    function bid() public payable onlyValidBids isValidCaller {}
+    function bid() public payable isValidCaller onlyValidBids {
+        require(msg.sender != seller, "CANT_BID_ON_YOUR_OWN_NFT");
+        if (msg.value > highest_bid) {
+            highest_bid = msg.value;
+        }
+        highest_bidder = msg.sender;
+        amount_bid[msg.sender] = msg.value;
+        bidders.push(msg.sender);
+        emit bid_made(msg.sender, msg.value);
+    }
 }
