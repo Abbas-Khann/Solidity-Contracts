@@ -7,6 +7,7 @@ error BID_NOT_ACTIVE();
 error AUCTION_TIME_EXCEEDED();
 error INVALID_ADDRESS_CALL();
 error NOT_BIDDER();
+error ONLY_SELLER();
 
 contract Auction {
     // event to emit when a bid is made
@@ -32,7 +33,7 @@ contract Auction {
     // timespan of the bid
     uint64 private constant bid_timespan = 24 hours;
     // bidding starting time
-    uint256 private bidding_ending_timestamp;
+    uint256 private auction_ending_timestamp;
     // boolean for state variable
     bool private locked;
     // array of all bidders
@@ -52,7 +53,7 @@ contract Auction {
         // setting the bidding_active bool to true after contract is deployed
         bidding_active = true;
         // setting the starting timestamp state to the current timestamp
-        bidding_ending_timestamp = block.timestamp + bid_timespan;
+        auction_ending_timestamp = block.timestamp + bid_timespan;
     }
 
     // modifier to check if the caller is valid
@@ -88,7 +89,7 @@ contract Auction {
             revert BID_NOT_ACTIVE();
         }
         // check to make sure the bidding has not expired
-        if (block.timestamp > bidding_ending_timestamp) {
+        if (block.timestamp > auction_ending_timestamp) {
             revert AUCTION_TIME_EXCEEDED();
         }
         _;
@@ -97,6 +98,13 @@ contract Auction {
     modifier isBidder() {
         if (amount_bid[msg.sender] == 0) {
             revert NOT_BIDDER();
+        }
+        _;
+    }
+
+    modifier onlySeller() {
+        if (msg.sender != seller) {
+            revert ONLY_SELLER();
         }
         _;
     }
@@ -137,5 +145,22 @@ contract Auction {
         // delete the mapping of the caller to his price
         delete amount_bid[msg.sender];
         emit Withdraw(msg.sender, balance);
+    }
+
+    /*
+    @dev
+    */
+    function endAuction() public payable isValidCaller nonReentrant onlySeller {
+        require(
+            block.timestamp > auction_ending_timestamp,
+            "Auction not ended yet"
+        );
+        bidding_active = false;
+        address winner = highest_bidder;
+        nft_contract.safeTransferFrom(seller, winner, token_id);
+        (bool sent, ) = seller.call{value: highest_bid}("");
+        require(sent, "Failed to pay nft owner");
+        delete amount_bid[winner];
+        // call the func to repay the rest if not repaid yet
     }
 }
