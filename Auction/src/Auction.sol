@@ -6,12 +6,15 @@ error BID_NOT_HIGHEST();
 error BID_NOT_ACTIVE();
 error AUCTION_TIME_EXCEEDED();
 error INVALID_ADDRESS_CALL();
+error NOT_BIDDER();
 
 contract Auction {
     // event to emit when a bid is made
-    event bid_made(address indexed sender, uint256 amount);
+    event Bid(address indexed sender, uint256 amount);
     // event to emit when the auction is ended
-    event auction_ended(address indexed winner, uint256 ending_timestamp);
+    event AuctionEnded(address indexed winner, uint256 ending_timestamp);
+    // event to emit when bidder withdraws their ether
+    event Withdraw(address indexed withdrawer, uint256 amount);
     // nft contract address
     IERC721 private nft_contract;
     // token_id for the nft
@@ -91,6 +94,20 @@ contract Auction {
         _;
     }
 
+    modifier isBidder() {
+        if (amount_bid[msg.sender] == 0) {
+            revert NOT_BIDDER();
+        }
+        _;
+    }
+
+    /*
+    @dev function to get the amount bid by each bidder
+    */
+    function getAmountBid(address _bidder) private view returns (uint256) {
+        return amount_bid[_bidder];
+    }
+
     /*
     @dev function to place a bid
     */
@@ -102,6 +119,23 @@ contract Auction {
         highest_bidder = msg.sender;
         amount_bid[msg.sender] = msg.value;
         bidders.push(msg.sender);
-        emit bid_made(msg.sender, msg.value);
+        emit Bid(msg.sender, msg.value);
+    }
+
+    /*
+    @dev function that allows bidders to withdraw their ether if they don't win the auction
+    */
+    function withdraw() public payable isValidCaller isBidder nonReentrant {
+        require(msg.sender != seller, "You can't withdraw or bid your NFT");
+        require(
+            msg.sender != highest_bidder,
+            "You are the highest bidder, You can't withdraw"
+        );
+        uint256 balance = getAmountBid(msg.sender);
+        (bool withdrawEther, ) = msg.sender.call{value: balance}("");
+        require(withdrawEther, "Failed to withdraw ether");
+        // delete the mapping of the caller to his price
+        delete amount_bid[msg.sender];
+        emit Withdraw(msg.sender, balance);
     }
 }
