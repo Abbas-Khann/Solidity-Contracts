@@ -95,6 +95,7 @@ contract Auction {
         _;
     }
 
+    // modifier to only allow bidder to call a function
     modifier isBidder() {
         if (amount_bid[msg.sender] == 0) {
             revert NOT_BIDDER();
@@ -102,6 +103,7 @@ contract Auction {
         _;
     }
 
+    // modifier to only allow seller to call a function
     modifier onlySeller() {
         if (msg.sender != seller) {
             revert ONLY_SELLER();
