@@ -148,7 +148,7 @@ contract Auction {
     }
 
     /*
-    @dev
+    @dev function that allows owner to end the auction after the time has exceeded
     */
     function endAuction() public payable isValidCaller nonReentrant onlySeller {
         require(
@@ -162,5 +162,25 @@ contract Auction {
         require(sent, "Failed to pay nft owner");
         delete amount_bid[winner];
         // call the func to repay the rest if not repaid yet
+        for (uint256 i = 0; i < bidders.length; i++) {
+            // payback here
+            repay(bidders[i]);
+        }
+        bidding_active = false;
+        emit AuctionEnded(winner, block.timestamp);
+    }
+
+    /*
+    @dev function that repays all users if they haven't withdrawn their ether
+    */
+    function repay(address _bidder) private nonReentrant {
+        // get the amount each bidder has bid
+        uint256 _amount = amount_bid[_bidder];
+
+        // if the amount bid is greater than 0 we need to pay them back
+        if (_amount > 0) {
+            (bool payback, ) = _bidder.call{value: _amount}("");
+            require(payback, "Failed to payback");
+        }
     }
 }
